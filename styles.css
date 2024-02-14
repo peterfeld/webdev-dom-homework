@@ -172,3 +172,7 @@ body {
   .error {
     background-color: darkred;
   }
+
+  .loading {
+    display: none;
+  }
