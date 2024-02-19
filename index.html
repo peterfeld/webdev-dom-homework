@@ -55,8 +55,8 @@
             }
             return date
           }
-
-    fetch(
+    let fetchGetFunction = function () {
+      fetch(
       'https://wedev-api.sky.pro/api/v1/alena-peterfeld/comments',
       {
         method: "GET"
@@ -79,6 +79,10 @@
         renderUsers();
       })
     })
+    };
+          
+    fetchGetFunction();
+
 
       //Проверяет, стоит ли лайк
     const ifLike = function (isLike) {
@@ -199,7 +203,10 @@
     nameInputElement.addEventListener('input', (event) => {})
     commentInputElement.addEventListener('input', (event) => {})
 
-    oninput = (event) => {buttonElement.disabled = false;};
+    oninput = (event) => {buttonElement.disabled = false;
+      nameInputElement.classList.remove('error');
+      commentInputElement.classList.remove('error');
+    };
 
     // Добавляет новый комментарий
 
@@ -234,29 +241,7 @@
           const addForm = document.getElementById('add-form');
           addForm.style.display = 'flex';
 
-        fetch(
-      'https://wedev-api.sky.pro/api/v1/alena-peterfeld/comments',
-      {
-        method: "GET"
-      }
-    ).then((response) =>{
-      const jsonPromise = response.json();
-      jsonPromise.then((responseData) => {
-        const appComments = responseData.comments.map((comment) =>{
-          const dataOld = new Date(comment.date);
-          const dataNew = `${fullDate(dataOld.getDate())}.${fullDate(dataOld.getMonth() + 1)}.${fullDate(dataOld.getFullYear())} ${dataOld.getHours()}:${fullDate(dataOld.getMinutes())}`;
-          return {
-            name: comment.author.name,
-            date: dataNew,
-            commentUser: comment.text,
-            likeCount: comment.likes,
-            likeUser: false
-          }
-        });
-        users = appComments;
-        renderUsers();
-      })
-    })
+          fetchGetFunction();
       })
     })
       
