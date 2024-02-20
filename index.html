@@ -8,6 +8,7 @@
 
   <body>
     <div class="container">
+      <div id="loaderComments" class="loaderComments">Список комментариев добавляется...</div>
       <ul class="comments" id="comments-list">
       </ul>
       <div class="add-form" id="add-form">
@@ -33,7 +34,8 @@
         </div>
       </div>
 
-      
+      <div id="loader" class="loader"></div>
+
     </div>
   </body>
 
@@ -44,6 +46,9 @@
     const commentInputElement = document.getElementById("comment-input");
     const comments = document.getElementById("comments-list");
     const removeBtn = document.getElementById('remove-button');
+    const loader = document.getElementById('loader');
+    const loaderCommens = document.getElementById('loaderComments');
+    const addForm = document.getElementById('add-form');
 
     let users = [];
     let isLoading = false;
@@ -56,14 +61,15 @@
             return date
           }
     let fetchGetFunction = function () {
-      fetch(
+      return fetch(
       'https://wedev-api.sky.pro/api/v1/alena-peterfeld/comments',
       {
         method: "GET"
-      }
-    ).then((response) =>{
-      const jsonPromise = response.json();
-      jsonPromise.then((responseData) => {
+      })
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
         const appComments = responseData.comments.map((comment) =>{
           const dataOld = new Date(comment.date);
           const dataNew = `${fullDate(dataOld.getDate())}.${fullDate(dataOld.getMonth() + 1)}.${fullDate(dataOld.getFullYear())} ${dataOld.getHours()}:${fullDate(dataOld.getMinutes())}`;
@@ -76,11 +82,11 @@
           }
         });
         users = appComments;
+        loaderCommens.style.display = 'none';
         renderUsers();
       })
-    })
     };
-          
+  
     fetchGetFunction();
 
 
@@ -91,10 +97,12 @@
 
     const renderUsers = function () {
       if (isLoading) {
-        const addForm = document.getElementById('add-form');
         addForm.style.display = 'none';
+        loader.style.display = 'block';
       } else {
       //Превращает массив в строку
+      addForm.style.display = 'flex';
+      loader.style.display = 'none';
       const usersHTML = users
       .map ((users, index) => {
         return ` <li class="comment">
@@ -222,7 +230,6 @@
         commentInputElement.classList.add('error')
         return
       }
-
       isLoading = true;
 
       fetch(
@@ -232,23 +239,20 @@
         body: JSON.stringify({
           text: commentInputElement.value,
           name: nameInputElement.value
-        })
-      }
-    ).then((response) =>{
-      const jsonPromise = response.json();
-      jsonPromise.then((responseData) => {
-          isLoading = false;
-          const addForm = document.getElementById('add-form');
-          addForm.style.display = 'flex';
-
-          fetchGetFunction();
+        }),
       })
-    })
-      
-      renderUsers()
+      .then((response) => {
+       return response.json();
+      })
+      .then((responseData) => {
+        fetchGetFunction();
+        isLoading = false;
+      });
 
-        nameInputElement.value = '';  
-        commentInputElement.value = '';  
+      renderUsers();
+
+      nameInputElement.value = '';  
+      commentInputElement.value = '';  
     }
 
     buttonElement.addEventListener('click', () => {
