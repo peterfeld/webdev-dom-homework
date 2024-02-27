@@ -8,9 +8,10 @@
 
   <body>
     <div class="container">
+      <div id="loaderComments" class="loaderComments">Список комментариев добавляется...</div>
       <ul class="comments" id="comments-list">
       </ul>
-      <div class="add-form">
+      <div class="add-form" id="add-form">
         <input
           type="text"
           class="add-form-name"
@@ -32,6 +33,9 @@
           <button class="add-form-button" id="remove-button">Удалить последний комментарий</button>
         </div>
       </div>
+
+      <div id="loader" class="loader"></div>
+
     </div>
   </body>
 
@@ -42,29 +46,63 @@
     const commentInputElement = document.getElementById("comment-input");
     const comments = document.getElementById("comments-list");
     const removeBtn = document.getElementById('remove-button');
-    const users = [
+    const loader = document.getElementById('loader');
+    const loaderCommens = document.getElementById('loaderComments');
+    const addForm = document.getElementById('add-form');
+
+    let users = [];
+    let isLoading = false;
+    const fullDate = function (date) {
+            if (date < 10) {
+              return `0${date}`
+            } else if (date > 1000) {
+              return date - 2000
+            }
+            return date
+          }
+    let fetchGetFunction = function () {
+      return fetch(
+      'https://wedev-api.sky.pro/api/v1/alena-peterfeld/comments',
       {
-        name: 'Глеб Фокин',
-        date: '12.02.22 12:18',
-        commentUser: 'Это будет первый комментарий на этой странице',
-        likeCount:3,
-        likeUser: false,
-      },
-      {
-        name: 'Варвара Н.',
-        date: '13.02.22 19:22',
-        commentUser: 'Мне нравится как оформлена эта страница! ❤',
-        likeCount:75,
-        likeUser: true,
-      },
-    ];
+        method: "GET"
+      })
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        const appComments = responseData.comments.map((comment) =>{
+          const dataOld = new Date(comment.date);
+          const dataNew = `${fullDate(dataOld.getDate())}.${fullDate(dataOld.getMonth() + 1)}.${fullDate(dataOld.getFullYear())} ${dataOld.getHours()}:${fullDate(dataOld.getMinutes())}`;
+          return {
+            name: comment.author.name,
+            date: dataNew,
+            commentUser: comment.text,
+            likeCount: comment.likes,
+            likeUser: false
+          }
+        });
+        users = appComments;
+        loaderCommens.style.display = 'none';
+        renderUsers();
+      })
+    };
+  
+    fetchGetFunction();
+
+
       //Проверяет, стоит ли лайк
     const ifLike = function (isLike) {
       return (isLike) ? '-active-like' : ''
     }
 
     const renderUsers = function () {
+      if (isLoading) {
+        addForm.style.display = 'none';
+        loader.style.display = 'block';
+      } else {
       //Превращает массив в строку
+      addForm.style.display = 'flex';
+      loader.style.display = 'none';
       const usersHTML = users
       .map ((users, index) => {
         return ` <li class="comment">
@@ -73,7 +111,7 @@
             <div>${users.date}</div>
           </div>
           <div class="comment-body">
-            <div class="comment-text">
+            <div class="comment-text" data-index="${index}">
               ${users.commentUser}
             </div>
             <textarea
@@ -101,8 +139,9 @@
 
       initEventListeners();
       initEditButton();
+      initReComment();
 
-    }  
+     } }  
     // Изменение кнопки like
 
     const initEventListeners = () => {
@@ -139,7 +178,7 @@
           saveButtons[index].style.display ='block';
           editForms[index].textContent = users[index].commentUser; 
           saveButtons[index].addEventListener('click', () => {
-            users[index].commentUser = editForms[index].value;
+            users[index].commentUser = editForms[index].value.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
             editForms[index].style.display = 'none';
             commentText[index].style.display = 'block';
             editButton.style.display = 'block';
@@ -150,31 +189,37 @@
       }
     }
 
+   // Добавляет ответ к комментарию
+   const initReComment = () => {
+    const commentsTexts = document.querySelectorAll('.comment-text');
+    for (const commentText of commentsTexts) {
+      commentText.addEventListener('click', (event) => {
+        const index = commentText.dataset.index;
+        event.stopPropagation();
+        commentText.style.whiteSpace = 'pre-line';
+        commentInputElement.value = `> ${users[index].commentUser}
+        ${users[index].name}`;
 
+      })
+    }
+   } 
 
     renderUsers();
-
-
 
     buttonElement.disabled = true;
 
     nameInputElement.addEventListener('input', (event) => {})
     commentInputElement.addEventListener('input', (event) => {})
 
-    oninput = (event) => {buttonElement.disabled = false;};
+    oninput = (event) => {buttonElement.disabled = false;
+      nameInputElement.classList.remove('error');
+      commentInputElement.classList.remove('error');
+    };
 
     // Добавляет новый комментарий
 
     let renderFun = function () {
       const currentDate = new Date();
-      const fullDate = function (date) {
-        if (date < 10) {
-          return `0${date}`
-        } else if (date > 1000) {
-          return date - 2000
-        }
-        return date
-      }
       const dateComment = `${fullDate(currentDate.getDate())}.${fullDate(currentDate.getMonth() + 1)}.${fullDate(currentDate.getFullYear())} ${currentDate.getHours()}:${fullDate(currentDate.getMinutes())}`;
       nameInputElement.classList.remove('error');
       commentInputElement.classList.remove('error');
@@ -185,21 +230,29 @@
         commentInputElement.classList.add('error')
         return
       }
+      isLoading = true;
 
-      users.push(
-        {
-          name: nameInputElement.value,
-          date: dateComment,
-          commentUser: commentInputElement.value,
-          likeCount: 0,
-          likeUser: false,
-        }
-      )
-      
-      renderUsers()
+      fetch(
+      'https://wedev-api.sky.pro/api/v1/alena-peterfeld/comments',
+      {
+        method: "POST",
+        body: JSON.stringify({
+          text: commentInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+          name: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+        }),
+      })
+      .then((response) => {
+       return response.json();
+      })
+      .then((responseData) => {
+        fetchGetFunction();
+        isLoading = false;
+      });
 
-        nameInputElement.value = '';  
-        commentInputElement.value = '';  
+      renderUsers();
+
+      nameInputElement.value = '';  
+      commentInputElement.value = '';  
     }
 
     buttonElement.addEventListener('click', () => {
