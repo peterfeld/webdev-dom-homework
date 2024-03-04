@@ -67,6 +67,11 @@
         method: "GET"
       })
       .then((response) => {
+        if (response.status === 500) {
+          alert("Сервер упал, попробуйте позже")
+          throw new Error("Сервер сломался");
+        } 
+
         return response.json();
       })
       .then((responseData) => {
@@ -84,6 +89,10 @@
         users = appComments;
         loaderCommens.style.display = 'none';
         renderUsers();
+      })
+      .catch((error) => {
+        loaderCommens.style.display = 'none';
+        alert("Кажется что-то пошло не так, попробуйте позже");
       })
     };
   
@@ -161,9 +170,8 @@
         renderUsers();
       })
     }
-
     }
-// Редактирует комментарии
+// Редактирует комментарии:
     const initEditButton= () => {
       const editButtons = document.querySelectorAll('.edit-button');
       const editForms = document.querySelectorAll('.edit-form-text');
@@ -238,21 +246,37 @@
         method: "POST",
         body: JSON.stringify({
           text: commentInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
-          name: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+          name: nameInputElement.value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+          forceError: true,
         }),
       })
       .then((response) => {
+        if (response.status === 400){
+          alert("Имя и комментарий должны содержать не меньше 3-х символов")
+          throw new Error("Плохой запрос");
+        }
+        if (response.status === 500) {
+          alert("Сервер упал, попробуйте позже")
+          throw new Error("Сервер сломался");
+        } 
+        
        return response.json();
       })
       .then((responseData) => {
         fetchGetFunction();
         isLoading = false;
+        nameInputElement.value = '';  
+        commentInputElement.value = '';  
+      })
+      .catch((error) => {
+        addForm.style.display = 'flex';
+        loader.style.display = 'none';
+        alert("Кажется что-то пошло не так, попробуйте позже")
       });
 
       renderUsers();
 
-      nameInputElement.value = '';  
-      commentInputElement.value = '';  
+
     }
 
     buttonElement.addEventListener('click', () => {
